@@ -4,24 +4,13 @@
 import sqlite3 as lite
 import sys
 
-con = None
-
-try:
-    con = lite.connect('pass.db')
-    
+with lite.connect('pass.db') as con:
     cur = con.cursor()    
-    cur.execute('SELECT SQLITE_VERSION()')
+    try:
+        con.execute('SELECT * FROM pass')
+    except lite.Error as e:
+        # con.execute('''CREATE TABLE pass (email, name, password, description)''')
+        print(e)
     
-    data = cur.fetchone()
     
-    print "SQLite version: %s" % data                
-    
-except lite.Error, e:
-    
-    print "Error %s:" % e.args[0]
-    sys.exit(1)
-    
-finally:
-    
-    if con:
-        con.close()
+    #con.close()
