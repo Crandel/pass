@@ -3,6 +3,7 @@
 import sqlite3 as lite
 import sys, argparse
 
+
 def create_new_pass(args):
     # args validators
     email = str(args.e)
@@ -12,7 +13,9 @@ def create_new_pass(args):
 
     # Password.add(email=email, password=password)
 
+
 def parse_args():
+    print('start parse args')
     parser = argparse.ArgumentParser(description='Password database utility')
     subparsers = parser.add_subparsers()
     parser_create = subparsers.add_parser('create', help='Create a new password to database')
@@ -21,9 +24,17 @@ def parse_args():
     parser_create.add_argument('p', help='use to add password')
     parser_create.add_argument('d', help='use to add short description or search on it with regexp')
     parser_create.set_defaults(func=create_new_pass)
-
+    print('end parse')
     return parser.parse_args()
 
+
 def main():
+    print('start')
     args = parse_args()
+    print('-----')
     args.func(args)
+    print('stop')
+
+
+if __name__ == "__main__":
+    main()
