@@ -4,34 +4,33 @@ import sqlite3 as lite
 import sys, argparse
 
 
-def add_new_pass(args):
-    # args validators
-    email = str(args.e)
-    password = str(args.p)
-    print(email)
-    print(password, 'add_new_pass')
+class Password():
 
-    # Password.add(email=email, password=password)
+    def connect():
+        with lite.connect('pass.db') as con:
+            return con
 
+    def search(args):
+        # args validators
+        email = str(args.e)
+        password = str(args.p)
+        print(self.connect)
+        print(email)
+        print('search pass')
 
-def delete_pass(args):
-    # args validators
-    email = str(args.e)
-    password = str(args.p)
-    print(email)
-    print(password, 'delete_pass')
+    def add(args):
+        # args validators
+        email = str(args.e)
+        password = str(args.p)
+        print(email)
+        print('add pass')
 
-    # Password.delete(email=email, password=password)
-
-
-def search_pass(args):
-    # args validators
-    email = str(args.e)
-    password = str(args.p)
-    print(email)
-    print(password, 'search_pass')
-
-    # Password.search(email=email, password=password)
+    def delete(args):
+        # args validators
+        email = str(args.e)
+        password = str(args.p)
+        print(email)
+        print('delete pass')
 
 
 def parse_args():
@@ -41,12 +40,16 @@ def parse_args():
     parser.add_argument('-l', help='use to add login or search on it')
     parser.add_argument('-p', help='use to add password')
     parser.add_argument('-d', help='use to add short description or search on it with regexp')
+    parser.set_defaults(func=Password.search)
+
     subparsers = parser.add_subparsers()
+
     parser_add = subparsers.add_parser('add', help='Add new password to database')
+    parser_add.set_defaults(func=Password.add)
+    
     parser_delete = subparsers.add_parser('delete', help='Delete password from database')
-    parser_add.set_defaults(func=add_new_pass)
-    parser_delete.set_defaults(func=delete_pass)
-    parser.set_defaults(func=search_pass)
+    parser_delete.set_defaults(func=Password.delete)
+    
     print('end parse')
     return parser.parse_args()
 
