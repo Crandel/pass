@@ -6,36 +6,40 @@ import sys, argparse
 
 class Password():
 
-    def connect(self):
+    def __init__(self, *args, **kwargs):
         with lite.connect('pass.db') as con:
             cur = con.cursor()
             cur.execute('''CREATE TABLE IF NOT EXISTS password
              (email text, password text, login text, site text, description text)''')
             cur.fetchone()
 
-            return cur
+            self.cursor = cur
 
-    def search(self, args):
+    def __del__(self, *args, **kwargs):
+        self.cursor.close()
+
+    def search(self, arguments, *args, **kwargs):
         # args validators
-        email = str(args.e)
-        password = str(args.p)
-        cur = self.connect()
-        print(email)
+        print(arguments, type(arguments), dir(arguments))
+        email = str(arguments.e)
+        # password = str(arguments.p)
+        cur = self.cursor
+        print(email, dir(email), type(email))
         print('search pass')
 
-    def add(self, args):
+    def add(self, arguments, *args, **kwargs):
         # args validators
-        email = str(args.e)
-        password = str(args.p)
-        cur = self.connect()
+        email = str(arguments.e)
+        password = str(arguments.p)
+        cur = self.cursor
         print(email)
         print('add pass')
 
-    def delete(self, args):
+    def delete(self, arguments, *args, **kwargs):
         # args validators
-        email = str(args.e)
-        password = str(args.p)
-        cur = self.connect()
+        email = str(arguments.e)
+        password = str(arguments.p)
+        cur = self.cursor
         print(email)
         print('delete pass')
 
@@ -67,7 +71,7 @@ def main():
     print('start')
     args = parse_args()
     print('-----')
-    args.func(args=args)
+    args.func(args)
     print('stop')
 
 
