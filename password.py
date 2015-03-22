@@ -9,10 +9,14 @@ class Password():
     def __init__(self, *args, **kwargs):
         with lite.connect('pass.db') as con:
             cur = con.cursor()
-            cur.execute('''CREATE TABLE IF NOT EXISTS password
-             (email text, password text, login text, site text, description text)''')
-            cur.fetchone()
-
+            cur.execute('CREATE TABLE IF NOT EXISTS password \
+                        (email text, password text, login text, site text, description text)')
+            con.commit()
+            cur.close()
+            con.close()
+            con = lite.connect('pass.db')
+            cur = con.cursor()
+            print(type(cur), dir(cur))
             self.cursor = cur
 
     def __del__(self, *args, **kwargs):
@@ -20,11 +24,12 @@ class Password():
 
     def search(self, arguments, *args, **kwargs):
         # args validators
-        print(arguments, type(arguments), dir(arguments))
         email = str(arguments.e)
         # password = str(arguments.p)
         cur = self.cursor
-        print(email, dir(email), type(email))
+
+        cur.execute('SELECT * from password')
+        print(cur.fetchone())
         print('search pass')
 
     def add(self, arguments, *args, **kwargs):
@@ -45,7 +50,6 @@ class Password():
 
 
 def parse_args():
-    print('start parse args')
     password = Password()
     parser = argparse.ArgumentParser(description='Password database utility')
     parser.add_argument('-e', help='use to add email or search on it')
@@ -63,7 +67,6 @@ def parse_args():
     parser_delete = subparsers.add_parser('delete', help='Delete password from database')
     parser_delete.set_defaults(func=password.delete)
     
-    print('end parse')
     return parser.parse_args()
 
 
