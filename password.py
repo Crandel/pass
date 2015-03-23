@@ -3,20 +3,17 @@
 import sqlite3 as lite
 import sys, argparse
 
+table = 'password'
+
 
 class Password():
 
     def __init__(self, *args, **kwargs):
         with lite.connect('pass.db') as con:
             cur = con.cursor()
-            cur.execute('CREATE TABLE IF NOT EXISTS password \
-                        (email text, password text, login text, site text, description text)')
+            query = 'CREATE TABLE IF NOT EXISTS ' + table + '(email text, password text, login text, site text, description text)'
+            cur.execute(query)
             con.commit()
-            cur.close()
-            con.close()
-            con = lite.connect('pass.db')
-            cur = con.cursor()
-            print(type(cur), dir(cur))
             self.cursor = cur
 
     def __del__(self, *args, **kwargs):
@@ -27,8 +24,8 @@ class Password():
         email = str(arguments.e)
         # password = str(arguments.p)
         cur = self.cursor
-
-        cur.execute('SELECT * from password')
+        sql = 'SELECT name FROM sqlite_master WHERE type="table" AND name="' + table + '";'
+        cur.execute(sql)
         print(cur.fetchone())
         print('search pass')
 
@@ -63,10 +60,10 @@ def parse_args():
 
     parser_add = subparsers.add_parser('add', help='Add new password to database')
     parser_add.set_defaults(func=password.add)
-    
+
     parser_delete = subparsers.add_parser('delete', help='Delete password from database')
     parser_delete.set_defaults(func=password.delete)
-    
+
     return parser.parse_args()
 
 
