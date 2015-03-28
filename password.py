@@ -23,34 +23,88 @@ class Password():
 
     def search(self, arguments, *args, **kwargs):
         # args validators
-        email = str(arguments.e)
-        password = str(arguments.p)
-        params = 'email="{}"'.format(email)
+        params = {}
+        email = arguments.e
+        login = arguments.l
+        site = arguments.s
+        description = arguments.d
+
+        sql_get = 'SELECT * FROM ' + table 
+
+        delimeter = '=:'
+        if email:
+            params['email'] = email
+
+        if login:
+            params['login'] = login
+
+        if site:
+            params['site'] = site
+
+        if description:
+            params['description'] = description
+        if params:
+            params_sql = ' WHERE'
+            i = False
+            for p in params:
+                if i:
+                    params_sql += ' OR'
+                params_sql += ' {0}=:{1}'.format(p, p)
+                i = True
+            sql_get += params_sql
+        sql_get += ';'
         cur = self.cursor
-        sql = 'SELECT * FROM ' + table + ' WHERE {};'.format(params)
-        print(sql)
-        cur.execute(sql)
-        self.con.commit()
+        print(sql_get, params)
+        results = False
+        try:
+            cur.execute(sql_get, params)
+            results = cur.fetchall()
+        except lite.Error as e:
+            print(e, 'err')
+        print(results)
         print('search pass')
+        return results
 
     def add(self, arguments, *args, **kwargs):
         # args validators
-        email = str(arguments.e)
-        password = str(arguments.p)
-        login = str(arguments.l)
-        site = str(arguments.s)
-        description = str(arguments.d)
-        cur = self.cursor
-        sql = 'INSERT INTO ' + table + ' VALUES ("{0}", "{1}", "{2}", "{3}", "{4}");'.format(email, 
-                                                                              password,
-                                                                              login,
-                                                                              site,
-                                                                              description)
-        print(sql)
-        cur.execute(sql)
-        self.con.commit()
-        print(dir(cur))
-        print('add pass', sql)
+        if not self.search(arguments):
+            params = {}
+            email = arguments.e
+            password = arguments.p
+            login = arguments.l
+            site = arguments.s
+            description = arguments.d
+
+            if email:
+                params['email'] = email
+
+            if password:
+                params['password'] = password
+
+            if login:
+                params['login'] = login
+
+            if site:
+                params['site'] = site
+
+            if description:
+                params['description'] = description
+            print(params)
+            
+            sql_add = 'INSERT INTO ' + table 
+            if params:
+                for p in params:
+                    
+            # print(sqlget, 'search')
+            # print(sqladd, 'add')
+            # cur = self.cursor
+            # try:
+            #     cur.execute(sqlget, params)
+            #     cur.fetchall()
+            # except lite.Error as e:
+            #     print(e, 'error')
+            # print(cur.fetchall())
+            print('add pass')
 
     def delete(self, arguments, *args, **kwargs):
         # args validators
@@ -64,11 +118,11 @@ class Password():
 def parse_args():
     password = Password()
     parser = argparse.ArgumentParser(description='Password database utility')
-    parser.add_argument('-e', help='use to add email or search on it', default='')
-    parser.add_argument('-l', help='use to add login or search on it', default='')
-    parser.add_argument('-s', help='use to add site or search on it', default='')
-    parser.add_argument('-p', help='use to add password', default='')
-    parser.add_argument('-d', help='use to add short description or search on it with regexp', default='')
+    parser.add_argument('-e', help='use to add email or search on it', default=None)
+    parser.add_argument('-l', help='use to add login or search on it', default=None)
+    parser.add_argument('-s', help='use to add site or search on it', default=None)
+    parser.add_argument('-p', help='use to add password', default=None)
+    parser.add_argument('-d', help='use to add short description or search on it with regexp', default=None)
     parser.set_defaults(func=password.search)
 
     subparsers = parser.add_subparsers(dest='cmd')
