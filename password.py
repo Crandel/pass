@@ -71,10 +71,11 @@ class Password():
             params = {}
             email = arguments.e
             password = arguments.p
+            if not password:
+                return 'Password is required'
             login = arguments.l
             site = arguments.s
             description = arguments.d
-
             if email:
                 params['email'] = email
 
@@ -89,21 +90,28 @@ class Password():
 
             if description:
                 params['description'] = description
-            print(params)
             
             sql_add = 'INSERT INTO ' + table 
             if params:
+                name = ''
+                values = ''
+                i = False
                 for p in params:
-                    
-            # print(sqlget, 'search')
-            # print(sqladd, 'add')
-            # cur = self.cursor
-            # try:
-            #     cur.execute(sqlget, params)
-            #     cur.fetchall()
-            # except lite.Error as e:
-            #     print(e, 'error')
-            # print(cur.fetchall())
+                    if i: 
+                        name += ', '
+                        values += ', '
+                    name += p 
+                    values += ':' + p
+                    i = True
+                sql_add = sql_add + '(' + name + ') VALUES (' + values + ')'
+            sql_add += ';'
+            print(sql_add, 'add')
+            cur = self.cursor
+            try:
+                cur.execute(sql_add, params)
+                self.con.commit()
+            except lite.Error as e:
+                print(e, 'error')
             print('add pass')
 
     def delete(self, arguments, *args, **kwargs):
