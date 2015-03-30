@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 import sqlite3 as lite
 import sys, argparse
 
@@ -9,6 +8,7 @@ table = 'password'
 class Password():
 
     def __init__(self, *args, **kwargs):
+
         with lite.connect('pass.db') as con:
             self.con = con
             cur = con.cursor()
@@ -18,11 +18,12 @@ class Password():
             self.cursor = cur
 
     def __del__(self, *args, **kwargs):
+
         self.cursor.close()
         self.con.close()
 
     def search(self, arguments, *args, **kwargs):
-        # args validators
+        
         params = {}
         email = arguments.e
         login = arguments.l
@@ -66,7 +67,7 @@ class Password():
         return results
 
     def add(self, arguments, *args, **kwargs):
-        # args validators
+        
         if not self.search(arguments):
             params = {}
             email = arguments.e
@@ -115,11 +116,12 @@ class Password():
             print('add pass')
 
     def delete(self, arguments, *args, **kwargs):
-        # args validators
-        email = str(arguments.e)
-        password = str(arguments.p)
-        cur = self.cursor
-        print(email)
+        rows = self.search(arguments)
+        if rows:
+            cur = self.cursor
+            for r in rows:
+                print(r)
+        
         print('delete pass')
 
 
