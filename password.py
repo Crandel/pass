@@ -10,6 +10,11 @@ class Password():
     def __init__(self, *args, **kwargs):
 
         with lite.connect('pass.db') as con:
+            self.email = None
+            self.password = None
+            self.login = None
+            self.description = None
+            self.site = None
             self.con = con
             cur = con.cursor()
             query = 'CREATE TABLE IF NOT EXISTS ' + table + '(email text, password text, login text, site text, description text)'
@@ -24,26 +29,15 @@ class Password():
 
     def search(self, arguments, *args, **kwargs):
         
-        params = {}
-        email = arguments.e
-        login = arguments.l
-        site = arguments.s
-        description = arguments.d
-
+        self.email = arguments.e
+        self.login = arguments.l
+        self.site = arguments.s
+        self.description = arguments.d
+        self.password = arguments.p
         sql_get = 'SELECT * FROM ' + table 
 
         delimeter = '=:'
-        if email:
-            params['email'] = email
-
-        if login:
-            params['login'] = login
-
-        if site:
-            params['site'] = site
-
-        if description:
-            params['description'] = description
+        params = self.params()
         if params:
             params_sql = ' WHERE'
             i = False
@@ -59,38 +53,21 @@ class Password():
         results = False
         try:
             cur.execute(sql_get, params)
-            results = cur.fetchall()
+            results = cur
         except lite.Error as e:
             print(e, 'err')
-        print(results)
+        for r in results:
+            print(r)
         print('search pass')
         return results
 
     def add(self, arguments, *args, **kwargs):
         
         if not self.search(arguments):
-            params = {}
-            email = arguments.e
-            password = arguments.p
-            if not password:
+
+            if not self.password:
                 return 'Password is required'
-            login = arguments.l
-            site = arguments.s
-            description = arguments.d
-            if email:
-                params['email'] = email
-
-            if password:
-                params['password'] = password
-
-            if login:
-                params['login'] = login
-
-            if site:
-                params['site'] = site
-
-            if description:
-                params['description'] = description
+            params = self.params()
             
             sql_add = 'INSERT INTO ' + table 
             if params:
@@ -114,13 +91,34 @@ class Password():
             except lite.Error as e:
                 print(e, 'error')
             print('add pass')
+    
+    def params(self):
+        params = {}
+
+        if self.email:
+            params['email'] = self.email
+        if self.password:
+            params['password'] = self.password
+        if self.login:
+            params['login'] = self.login
+        if self.site:
+            params['site'] = self.site
+        if self.description:
+            params['description'] = self.description
+        print(params, 'def params')
+        return params
 
     def delete(self, arguments, *args, **kwargs):
         rows = self.search(arguments)
+
         if rows:
+            params = self.params()
+
             cur = self.cursor
             for r in rows:
+                # cur.execute()
                 print(r)
+            self.con.commit()
         
         print('delete pass')
 
