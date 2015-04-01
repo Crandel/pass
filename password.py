@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 import sqlite3 as lite
 import argparse
 
@@ -152,7 +152,6 @@ def parse_args():
     parser.add_argument('-s', help='use to add site or search on it', default=None)
     parser.add_argument('-p', help='use to add password', default=None)
     parser.add_argument('-d', help='use to add short description or search on it with regexp', default=None)
-    parser.set_defaults(func=password.search)
 
     subparsers = parser.add_subparsers(dest='cmd')
     subparsers.required=False
