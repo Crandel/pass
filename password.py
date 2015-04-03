@@ -40,6 +40,10 @@ class Password():
         self.login = arguments.l
         self.site = arguments.s
         self.description = arguments.d
+        try:
+            input_type = arguments.input_type
+        except AttributeError:
+            input_type = False
         self.password = arguments.p
         sql_get = 'SELECT * FROM {}'.format(table)
 
@@ -55,15 +59,20 @@ class Password():
             sql_get += params_sql
         sql_get += ';'
         cur = self.cursor
-        print(sql_get, params)
         results = False
         try:
             cur.execute(sql_get, params)
             results = cur.fetchall()
         except lite.Error as e:
             print(e, 'err')
-        for r in results:
-            print(r)
+        if input_type:
+            if len(results) > 1:
+                res_list = {i: results[i] for i in results}
+            else:
+                res_list = {1: results}
+            print(res_list)
+            queny = input('say something')
+            print(queny)
         print('search pass')
         return results
 
@@ -163,7 +172,7 @@ def parse_args():
     parser_delete.set_defaults(func=password.delete)
 
     parser_search = subparsers.add_parser('s', help='Search password from database')
-    parser_search.set_defaults(func=password.search)
+    parser_search.set_defaults(func=password.search, input_type=True)
 
     return parser.parse_args()
 
@@ -171,7 +180,7 @@ def parse_args():
 def main():
     print('start')
     args = parse_args()
-    print('-----')
+    print('-----', args)
     args.func(args)
     print('stop')
 
