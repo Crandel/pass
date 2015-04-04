@@ -66,13 +66,27 @@ class Password():
         except lite.Error as e:
             print(e, 'err')
         if input_type:
+            res_list = {}
             if len(results) > 1:
                 res_list = {i: results[i] for i in results}
+                type_list = '\n'.join([r for r in res_list])
+            elif len(results) == 1:
+                res_list = {1: results[0]}
+                type_list = '1. email={0}, login={1}, site={2}, description={3}'.format(
+                    results[0][0], results[0][2], results[0][3], results[0][4])
+            print(type_list)
+            queny = input('Please enter the number of record ')
+            print(queny, type(queny))
+            print(res_list.keys(), type(res_list.keys()))
+            try:
+                queny = int(queny)
+            except ValueError:
+                queny = input('Please enter a number ')
+                queny = int(queny)
+            if queny in res_list.keys():
+                print(res_list[queny])
             else:
-                res_list = {1: results}
-            print(res_list)
-            queny = input('say something')
-            print(queny)
+                print('Sorry, this record does not exist')
         print('search pass')
         return results
 
