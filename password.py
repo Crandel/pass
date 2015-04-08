@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 import sqlite3 as lite
 import argparse
+from subprocess import Popen, PIPE
 
-table = 'password'
+TABLE = 'password'
 EMAIL = 'email'
-PASSWORD = table
+PASSWORD = TABLE
 LOGIN = 'login'
 SITE = 'site'
 DESCRIPTION = 'description'
@@ -23,7 +24,7 @@ class Password():
             self.con = con
             cur = con.cursor()
             query = 'CREATE TABLE IF NOT EXISTS {0} ({1} text, {2} text, {3} text, {4} text, {5} text)'.format(
-                table, EMAIL, PASSWORD, LOGIN, SITE, DESCRIPTION
+                TABLE, EMAIL, PASSWORD, LOGIN, SITE, DESCRIPTION
             )
             cur.execute(query)
             con.commit()
@@ -33,6 +34,18 @@ class Password():
 
         self.cursor.close()
         self.con.close()
+
+    def clipboard(self):
+        xclipExists = call(['which', 'xclip'], stdout=PIPE, stderr=PIPE) == 0
+
+        xselExists = call(['which', 'xsel'], stdout=PIPE, stderr=PIPE) == 0
+
+        if xclipExists:
+            pass
+        elif xselExists:
+            pass
+        else:
+            raise Exception('Program requires the xclip or xsel application')
 
     def search(self, arguments, *args, **kwargs):
 
@@ -45,7 +58,7 @@ class Password():
         except AttributeError:
             input_type = False
         self.password = arguments.p
-        sql_get = 'SELECT * FROM {}'.format(table)
+        sql_get = 'SELECT * FROM {}'.format(TABLE)
 
         params = self.params()
         if params:
@@ -70,21 +83,24 @@ class Password():
             if len(results) > 1:
                 res_list = {i: results[i] for i in results}
                 type_list = '\n'.join([r for r in res_list])
+                print(type_list)
             elif len(results) == 1:
                 res_list = {1: results[0]}
-                type_list = '1. email={0}, login={1}, site={2}, description={3}'.format(
-                    results[0][0], results[0][2], results[0][3], results[0][4])
-            print(type_list)
+                print('1. email={0}, login={1}, site={2}, description={3}'.format(
+                    results[0][0], results[0][2], results[0][3], results[0][4]
+                    )
+                )
+
             queny = input('Please enter the number of record ')
-            print(queny, type(queny))
-            print(res_list.keys(), type(res_list.keys()))
             try:
                 queny = int(queny)
             except ValueError:
-                queny = input('Please enter a number ')
+                queny = input('Please enter a number of record ')
                 queny = int(queny)
             if queny in res_list.keys():
-                print(res_list[queny])
+                p = Popen(['xclip', '-selection', 'c'], stdin=PIPE, close_fds=True)
+                p.communicate(input=text.encode('utf-8'))
+                print(res_list[queny], type(queny), dir(queny))
             else:
                 print('Sorry, this record does not exist')
         print('search pass')
@@ -98,7 +114,7 @@ class Password():
                 return 'Password is required'
             params = self.params()
 
-            sql_add = 'INSERT INTO ' + table
+            sql_add = 'INSERT INTO ' + TABLE
             if params:
                 name = ''
                 values = ''
@@ -112,7 +128,6 @@ class Password():
                     i = True
                 sql_add = sql_add + '(' + name + ') VALUES (' + values + ')'
             sql_add += ';'
-            print(sql_add, 'add')
             cur = self.cursor
             try:
                 cur.execute(sql_add, params)
@@ -134,7 +149,6 @@ class Password():
             params[SITE] = self.site
         if self.description:
             params[DESCRIPTION] = self.description
-        print(params, 'def params')
         return params
 
     def delete(self, arguments, *args, **kwargs):
@@ -153,18 +167,33 @@ class Password():
                     i = [3, SITE]
                 elif DESCRIPTION in params:
                     i = [4, DESCRIPTION]
-                print('del start')
                 for r in rows:
                     par = {i[1]: r[i[0]]}
-                    print(par)
-                    sql = 'DELETE FROM {0} WHERE {1}=:{1}'.format(table, i[1])
-                    print(sql)
+                    sql = 'DELETE FROM {0} WHERE {1}=:{1}'.format(TABLE, i[1])
                     try:
                         cur.execute(sql, par)
                     except lite.Error as e:
                         print(e)
                 self.con.commit()
         print('delete pass')
+
+    def edit(self, arguments, *args, **kwargs):
+        rows = self.search(arguments)
+
+        if rows:
+            params = self.params()
+
+            if params:
+                cur = self.cursor
+                if EMAIL in params:
+                    i = [0, EMAIL]
+                elif LOGIN in params:
+                    i = [2, LOGIN]
+                elif SITE in params:
+                    i = [3, SITE]
+                elif DESCRIPTION in params:
+                    i = [4, DESCRIPTION]
+        print('edit pass')
 
 
 def parse_args():
@@ -182,6 +211,9 @@ def parse_args():
     parser_add = subparsers.add_parser('a', help='Add new password to database')
     parser_add.set_defaults(func=password.add)
 
+    parser_add = subparsers.add_parser('e', help='Edit record from database')
+    parser_add.set_defaults(func=password.edit)
+
     parser_delete = subparsers.add_parser('d', help='Delete password from database')
     parser_delete.set_defaults(func=password.delete)
 
@@ -194,7 +226,6 @@ def parse_args():
 def main():
     print('start')
     args = parse_args()
-    print('-----', args)
     args.func(args)
     print('stop')
 
