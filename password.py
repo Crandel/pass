@@ -13,14 +13,19 @@ DESCRIPTION = 'description'
 
 class Password():
 
+    email = None
+    password = None
+    login = None
+    description = None
+    site = None
+
+
+class PasswordManager(Password):
+
     def __init__(self, *args, **kwargs):
 
         with lite.connect('pass.db') as con:
-            self.email = None
-            self.password = None
-            self.login = None
-            self.description = None
-            self.site = None
+
             self.con = con
             cur = con.cursor()
             query = 'CREATE TABLE IF NOT EXISTS {0} ({1} text, {2} text, {3} text, {4} text, {5} text)'.format(
@@ -35,13 +40,14 @@ class Password():
         self.cursor.close()
         self.con.close()
 
-    def clipboard(self):
+    def clipboard(self, text):
         xclipExists = call(['which', 'xclip'], stdout=PIPE, stderr=PIPE) == 0
 
         xselExists = call(['which', 'xsel'], stdout=PIPE, stderr=PIPE) == 0
 
         if xclipExists:
-            pass
+            p = Popen(['xclip', '-selection', 'c'], stdin=PIPE, close_fds=True)
+            p.communicate(input=text.encode('utf-8'))
         elif xselExists:
             pass
         else:
@@ -98,8 +104,7 @@ class Password():
                 queny = input('Please enter a number of record ')
                 queny = int(queny)
             if queny in res_list.keys():
-                p = Popen(['xclip', '-selection', 'c'], stdin=PIPE, close_fds=True)
-                p.communicate(input=text.encode('utf-8'))
+                self.clipboard(res_list[queny])
                 print(res_list[queny], type(queny), dir(queny))
             else:
                 print('Sorry, this record does not exist')
@@ -197,7 +202,7 @@ class Password():
 
 
 def parse_args():
-    password = Password()
+    password = PasswordManager()
     parser = argparse.ArgumentParser(description='Password database utility')
     parser.add_argument('-e', help='use to add email or search on it', default=None)
     parser.add_argument('-l', help='use to add login or search on it', default=None)
@@ -205,8 +210,7 @@ def parse_args():
     parser.add_argument('-p', help='use to add password', default=None)
     parser.add_argument('-d', help='use to add short description or search on it with regexp', default=None)
 
-    subparsers = parser.add_subparsers(dest='cmd')
-    subparsers.required=False
+    subparsers = parser.add_subparsers()
 
     parser_add = subparsers.add_parser('a', help='Add new password to database')
     parser_add.set_defaults(func=password.add)
