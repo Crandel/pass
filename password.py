@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sqlite3 as lite
 import argparse
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, call
 
 TABLE = 'password'
 EMAIL = 'email'
@@ -18,6 +18,13 @@ class Password():
     login = None
     description = None
     site = None
+
+    def create(self, list):
+        self.email = list[0]
+        self.password = list[1]
+        self.login = list[2]
+        self.site = list[3]
+        self.description = list[4]
 
 
 class PasswordManager(Password):
@@ -41,15 +48,17 @@ class PasswordManager(Password):
         self.con.close()
 
     def clipboard(self, text):
+
         xclipExists = call(['which', 'xclip'], stdout=PIPE, stderr=PIPE) == 0
 
         xselExists = call(['which', 'xsel'], stdout=PIPE, stderr=PIPE) == 0
-
+        print(xclipExists, xselExists)
         if xclipExists:
-            p = Popen(['xclip', '-selection', 'c'], stdin=PIPE, close_fds=True)
+            p = Popen(['xclip', '-selection', 'c', '-i'], stdin=PIPE, close_fds=True)
             p.communicate(input=text.encode('utf-8'))
         elif xselExists:
-            pass
+            p = Popen(['xsel', '-b', '-i'], stdin=PIPE, close_fds=True)
+            p.communicate(input=text.encode('utf-8'))
         else:
             raise Exception('Program requires the xclip or xsel application')
 
@@ -87,25 +96,33 @@ class PasswordManager(Password):
         if input_type:
             res_list = {}
             if len(results) > 1:
-                res_list = {i: results[i] for i in results}
-                type_list = '\n'.join([r for r in res_list])
-                print(type_list)
+                print(results, type(results))
+                i = 0
+                for res in results:
+                    res_list[i] = res
+                    passw = Password()
+                    passw.create(res)
+                    print('{0}. email:{1}, login:{2}, site:{3}, description:{4}'.format(
+                            i, passw.email, passw.login, passw.site, passw.description
+                        )
+                    )
+                    i += 1
             elif len(results) == 1:
-                res_list = {1: results[0]}
+                res_list = {0: results[0]}
                 print('1. email={0}, login={1}, site={2}, description={3}'.format(
                     results[0][0], results[0][2], results[0][3], results[0][4]
                     )
                 )
 
-            queny = input('Please enter the number of record ')
+            queny = input('Please enter a number of record ')
             try:
                 queny = int(queny)
             except ValueError:
-                queny = input('Please enter a number of record ')
+                queny = input('Please enter the number of record ')
                 queny = int(queny)
             if queny in res_list.keys():
-                self.clipboard(res_list[queny])
-                print(res_list[queny], type(queny), dir(queny))
+                # password to clipboard
+                self.clipboard(res_list[queny][1])
             else:
                 print('Sorry, this record does not exist')
         print('search pass')
