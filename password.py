@@ -19,15 +19,22 @@ class Password():
     description = None
     site = None
 
-    def create(self, list):
+    def create_from_query(self, list):
         self.email = list[0]
         self.password = list[1]
         self.login = list[2]
         self.site = list[3]
         self.description = list[4]
 
+    def create_from_args(self, arguments):
+        self.email = arguments.e
+        self.password = arguments.p
+        self.login = arguments.l
+        self.site = arguments.s
+        self.description = arguments.d
 
-class PasswordManager(Password):
+
+class PasswordManager():
 
     def __init__(self, *args, **kwargs):
 
@@ -52,7 +59,6 @@ class PasswordManager(Password):
         xclipExists = call(['which', 'xclip'], stdout=PIPE, stderr=PIPE) == 0
 
         xselExists = call(['which', 'xsel'], stdout=PIPE, stderr=PIPE) == 0
-        print(xclipExists, xselExists)
         if xclipExists:
             p = Popen(['xclip', '-selection', 'c', '-i'], stdin=PIPE, close_fds=True)
             p.communicate(input=text.encode('utf-8'))
@@ -62,20 +68,34 @@ class PasswordManager(Password):
         else:
             raise Exception('Program requires the xclip or xsel application')
 
+    def parse_results(self, results):
+
+        res_list = {}
+        i = 1
+        for res in results:
+            res_list[i] = res
+            passw = Password()
+            passw.create_from_query(res)
+            print('{0}. email:{1}, login:{2}, site:{3}, description:{4}'.format(
+                    i, passw.email, passw.login, passw.site, passw.description
+                )
+            )
+            i += 1
+        return res_list
+
     def search(self, arguments, *args, **kwargs):
 
-        self.email = arguments.e
-        self.login = arguments.l
-        self.site = arguments.s
-        self.description = arguments.d
+        password = Password()
+        print(arguments, type(arguments), dir(arguments))
+        password.create_from_args(arguments)
+
         try:
             input_type = arguments.input_type
         except AttributeError:
             input_type = False
-        self.password = arguments.p
         sql_get = 'SELECT * FROM {}'.format(TABLE)
 
-        params = self.params()
+        params = self.params(password)
         if params:
             params_sql = ' WHERE'
             i = False
@@ -94,26 +114,7 @@ class PasswordManager(Password):
         except lite.Error as e:
             print(e, 'err')
         if input_type:
-            res_list = {}
-            if len(results) > 1:
-                print(results, type(results))
-                i = 0
-                for res in results:
-                    res_list[i] = res
-                    passw = Password()
-                    passw.create(res)
-                    print('{0}. email:{1}, login:{2}, site:{3}, description:{4}'.format(
-                            i, passw.email, passw.login, passw.site, passw.description
-                        )
-                    )
-                    i += 1
-            elif len(results) == 1:
-                res_list = {0: results[0]}
-                print('1. email={0}, login={1}, site={2}, description={3}'.format(
-                    results[0][0], results[0][2], results[0][3], results[0][4]
-                    )
-                )
-
+            res_list = self.parse_results(results)
             queny = input('Please enter a number of record ')
             try:
                 queny = int(queny)
@@ -125,52 +126,50 @@ class PasswordManager(Password):
                 self.clipboard(res_list[queny][1])
             else:
                 print('Sorry, this record does not exist')
-        print('search pass')
+        print('search results')
         return results
 
     def add(self, arguments, *args, **kwargs):
 
-        if not self.search(arguments):
+        if not self.password:
+            return 'Password is required'
+        params = self.params()
 
-            if not self.password:
-                return 'Password is required'
-            params = self.params()
+        sql_add = 'INSERT INTO ' + TABLE
+        if params:
+            name = ''
+            values = ''
+            i = False
+            for p in params:
+                if i:
+                    name += ', '
+                    values += ', '
+                name += p
+                values += ':' + p
+                i = True
+            sql_add = sql_add + '(' + name + ') VALUES (' + values + ')'
+        sql_add += ';'
+        cur = self.cursor
+        try:
+            cur.execute(sql_add, params)
+            self.con.commit()
+        except lite.Error as e:
+            print(e, 'error')
+        print('Record was added')
 
-            sql_add = 'INSERT INTO ' + TABLE
-            if params:
-                name = ''
-                values = ''
-                i = False
-                for p in params:
-                    if i:
-                        name += ', '
-                        values += ', '
-                    name += p
-                    values += ':' + p
-                    i = True
-                sql_add = sql_add + '(' + name + ') VALUES (' + values + ')'
-            sql_add += ';'
-            cur = self.cursor
-            try:
-                cur.execute(sql_add, params)
-                self.con.commit()
-            except lite.Error as e:
-                print(e, 'error')
-            print('add pass')
-
-    def params(self):
+    def params(self, password):
         params = {}
 
-        if self.email:
-            params[EMAIL] = self.email
-        if self.password:
-            params[PASSWORD] = self.password
-        if self.login:
-            params[LOGIN] = self.login
-        if self.site:
-            params[SITE] = self.site
-        if self.description:
-            params[DESCRIPTION] = self.description
+        if password.email:
+            params[EMAIL] = password.email
+        if password.password:
+            params[PASSWORD] = password.password
+        if password.login:
+            params[LOGIN] = password.login
+        if password.site:
+            params[SITE] = password.site
+        if password.description:
+            params[DESCRIPTION] = password.description
         return params
 
     def delete(self, arguments, *args, **kwargs):
