@@ -86,7 +86,6 @@ class PasswordManager():
     def search(self, arguments, *args, **kwargs):
 
         password = Password()
-        print(arguments, type(arguments), dir(arguments))
         password.create_from_args(arguments)
 
         try:
@@ -130,10 +129,11 @@ class PasswordManager():
         return results
 
     def add(self, arguments, *args, **kwargs):
-
-        if not self.password:
+        password = Password()
+        password.create_from_args(arguments)
+        if not password.password:
             return 'Password is required'
-        params = self.params()
+        params = self.params(password)
 
         sql_add = 'INSERT INTO ' + TABLE
         if params:
