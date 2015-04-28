@@ -112,7 +112,7 @@ class PasswordManager():
             results = cur.fetchall()
         except lite.Error as e:
             print(e, 'err')
-        if input_type:
+        if results and input_type:
             res_list = self.parse_results(results)
             queny = input('Please enter a number of record ')
             try:
@@ -125,6 +125,8 @@ class PasswordManager():
                 self.clipboard(res_list[queny][1])
             else:
                 print('Sorry, this record does not exist')
+        else:
+            print('Sorry, this record does not exist')
         print('search results')
         return results
 
@@ -173,10 +175,12 @@ class PasswordManager():
         return params
 
     def delete(self, arguments, *args, **kwargs):
+        password = Password()
+        password.create_from_args(arguments)
         rows = self.search(arguments)
 
         if rows:
-            params = self.params()
+            params = self.params(password)
 
             if params:
                 cur = self.cursor
