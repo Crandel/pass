@@ -131,6 +131,7 @@ class PasswordManager():
         return results
 
     def add(self, arguments, *args, **kwargs):
+        print(type(arguments), 'arguments type')
         password = Password()
         password.create_from_args(arguments)
         if not password.password:
