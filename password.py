@@ -20,11 +20,11 @@ class Password():
     site = None
 
     def create_from_query(self, list):
-        self.email = list[0]
-        self.password = list[1]
-        self.login = list[2]
-        self.site = list[3]
-        self.description = list[4]
+        self.email = list[1]
+        self.password = list[2]
+        self.login = list[3]
+        self.site = list[4]
+        self.description = list[5]
 
     def create_from_args(self, arguments):
         self.email = arguments.e
@@ -42,7 +42,7 @@ class PasswordManager():
 
             self.con = con
             cur = con.cursor()
-            query = 'CREATE TABLE IF NOT EXISTS {0} ({1} text, {2} text, {3} text, {4} text, {5} text)'.format(
+            query = 'CREATE TABLE IF NOT EXISTS {0} (id INTEGER PRIMARY KEY ASC, {1} text, {2} text, {3} text, {4} text, {5} text)'.format(
                 TABLE, EMAIL, PASSWORD, LOGIN, SITE, DESCRIPTION
             )
             cur.execute(query)
@@ -122,7 +122,7 @@ class PasswordManager():
                 queny = int(queny)
             if queny in res_list.keys():
                 # password to clipboard
-                self.clipboard(res_list[queny][1])
+                self.clipboard(res_list[queny][2])
             else:
                 print('Sorry, this record does not exist')
         else:
@@ -131,7 +131,6 @@ class PasswordManager():
         return results
 
     def add(self, arguments, *args, **kwargs):
-        print(type(arguments), 'arguments type')
         password = Password()
         password.create_from_args(arguments)
         if not password.password:
@@ -186,13 +185,13 @@ class PasswordManager():
             if params:
                 cur = self.cursor
                 if EMAIL in params:
-                    i = [0, EMAIL]
+                    i = [1, EMAIL]
                 elif LOGIN in params:
-                    i = [2, LOGIN]
+                    i = [3, LOGIN]
                 elif SITE in params:
-                    i = [3, SITE]
+                    i = [4, SITE]
                 elif DESCRIPTION in params:
-                    i = [4, DESCRIPTION]
+                    i = [5, DESCRIPTION]
                 for r in rows:
                     par = {i[1]: r[i[0]]}
                     sql = 'DELETE FROM {0} WHERE {1}=:{1}'.format(TABLE, i[1])
@@ -212,13 +211,13 @@ class PasswordManager():
             if params:
                 cur = self.cursor
                 if EMAIL in params:
-                    i = [0, EMAIL]
+                    i = [1, EMAIL]
                 elif LOGIN in params:
-                    i = [2, LOGIN]
+                    i = [3, LOGIN]
                 elif SITE in params:
-                    i = [3, SITE]
+                    i = [4, SITE]
                 elif DESCRIPTION in params:
-                    i = [4, DESCRIPTION]
+                    i = [5, DESCRIPTION]
         print('edit pass')
 
 
@@ -249,11 +248,8 @@ def parse_args():
 
 
 def main():
-    print('start')
     args = parse_args()
     args.func(args)
-    print('stop')
-
 
 if __name__ == "__main__":
     main()
