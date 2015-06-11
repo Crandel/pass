@@ -60,7 +60,12 @@ class PasswordManager():
 
         xselExists = call(['which', 'xsel'], stdout=PIPE, stderr=PIPE) == 0
         if xclipExists:
-            p = Popen(['xclip', '-selection', 'c', '-i'], stdin=PIPE, close_fds=True)
+            p = Popen(['xclip',
+                       '-selection',
+                       'c',
+                       '-i'],
+                      stdin=PIPE,
+                      close_fds=True)
             p.communicate(input=text.encode('utf-8'))
         elif xselExists:
             p = Popen(['xsel', '-b', '-i'], stdin=PIPE, close_fds=True)
@@ -77,8 +82,8 @@ class PasswordManager():
             passw = Password()
             passw.create_from_query(res)
             print('{0}. email:{1}, login:{2}, site:{3}, description:{4}'.format(
-                    i, passw.email, passw.login, passw.site, passw.description
-                )
+                i, passw.email, passw.login, passw.site, passw.description
+            )
             )
             i += 1
         return res_list
@@ -224,24 +229,42 @@ class PasswordManager():
 def parse_args():
     password = PasswordManager()
     parser = argparse.ArgumentParser(description='Password database utility')
-    parser.add_argument('-e', help='use to add email or search on it', default=None)
-    parser.add_argument('-l', help='use to add login or search on it', default=None)
-    parser.add_argument('-s', help='use to add site or search on it', default=None)
+    parser.add_argument(
+        '-e',
+        help='use to add email or search on it',
+        default=None)
+    parser.add_argument(
+        '-l',
+        help='use to add login or search on it',
+        default=None)
+    parser.add_argument(
+        '-s',
+        help='use to add site or search on it',
+        default=None)
     parser.add_argument('-p', help='use to add password', default=None)
-    parser.add_argument('-d', help='use to add short description or search on it with regexp', default=None)
+    parser.add_argument(
+        '-d',
+        help='use to add short description or search on it with regexp',
+        default=None)
 
     subparsers = parser.add_subparsers()
 
-    parser_add = subparsers.add_parser('a', help='Add new password to database')
+    parser_add = subparsers.add_parser(
+        'a',
+        help='Add new password to database')
     parser_add.set_defaults(func=password.add)
 
     parser_add = subparsers.add_parser('e', help='Edit record from database')
     parser_add.set_defaults(func=password.edit)
 
-    parser_delete = subparsers.add_parser('d', help='Delete password from database')
+    parser_delete = subparsers.add_parser(
+        'd',
+        help='Delete password from database')
     parser_delete.set_defaults(func=password.delete)
 
-    parser_search = subparsers.add_parser('s', help='Search password from database')
+    parser_search = subparsers.add_parser(
+        's',
+        help='Search password from database')
     parser_search.set_defaults(func=password.search, input_type=True)
 
     return parser.parse_args()
