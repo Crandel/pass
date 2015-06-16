@@ -3,13 +3,14 @@ import unittest
 import password
 import argparse
 
-query = [
+query = (
+    'test_id',
     'test_email',
     'test_password',
     'test_login',
     'test_site',
     'test_description'
-]
+)
 arguments = argparse.Namespace(
     e='arguments_email',
     p='arguments_password',
