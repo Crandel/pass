@@ -19,19 +19,20 @@ class Password():
     description = None
     site = None
 
-    def create_from_query(self, list):
-        self.email = list[1]
-        self.password = list[2]
-        self.login = list[3]
-        self.site = list[4]
-        self.description = list[5]
+    def create_pass(self, arguments):
 
-    def create_from_args(self, arguments):
-        self.email = arguments.e
-        self.password = arguments.p
-        self.login = arguments.l
-        self.site = arguments.s
-        self.description = arguments.d
+        if isinstance(arguments, tuple):
+            self.email = arguments[1]
+            self.password = arguments[2]
+            self.login = arguments[3]
+            self.site = arguments[4]
+            self.description = arguments[5]
+        else:
+            self.email = arguments.e
+            self.password = arguments.p
+            self.login = arguments.l
+            self.site = arguments.s
+            self.description = arguments.d
 
 
 class PasswordManager():
@@ -80,26 +81,20 @@ class PasswordManager():
         for res in results:
             res_list[i] = res
             passw = Password()
-            passw.create_from_query(res)
-            print('{0}. email:{1}, login:{2}, site:{3}, description:{4}'.format(
-                i, passw.email, passw.login, passw.site, passw.description
-            )
+            print(res, type(res))
+            passw.create_pass(res)
+            print(
+                '{0}. email:{1}, login:{2}, site:{3}, description:{4}'.format(
+                    i, passw.email, passw.login, passw.site, passw.description
+                )
             )
             i += 1
         return res_list
 
-    def search(self, arguments, *args, **kwargs):
+    def search_query(self, params):
 
-        password = Password()
-        password.create_from_args(arguments)
-
-        try:
-            input_type = arguments.input_type
-        except AttributeError:
-            input_type = False
         sql_get = 'SELECT * FROM {}'.format(TABLE)
 
-        params = self.params(password)
         if params:
             params_sql = ' WHERE'
             i = False
@@ -110,13 +105,30 @@ class PasswordManager():
                 i = True
             sql_get += params_sql
         sql_get += ';'
+
+        return sql_get
+
+    def search(self, arguments, *args, **kwargs):
+
+        password = Password()
+        password.create_pass(arguments)
+
+        try:
+            input_type = arguments.input_type
+        except AttributeError:
+            input_type = False
+
+        params = self.params(password)
+        sql_get = self.search_query(params)
         cur = self.cursor
         results = False
+
         try:
             cur.execute(sql_get, params)
             results = cur.fetchall()
         except lite.Error as e:
             print(e, 'err')
+
         if results and input_type:
             res_list = self.parse_results(results)
             queny = input('Please enter a number of record ')
@@ -135,12 +147,7 @@ class PasswordManager():
         print('search results')
         return results
 
-    def add(self, arguments, *args, **kwargs):
-        password = Password()
-        password.create_from_args(arguments)
-        if not password.password:
-            return 'Password is required'
-        params = self.params(password)
+    def add_query(self, params):
 
         sql_add = 'INSERT INTO ' + TABLE
         if params:
@@ -156,7 +163,21 @@ class PasswordManager():
                 i = True
             sql_add = sql_add + '(' + name + ') VALUES (' + values + ')'
         sql_add += ';'
+        return sql_add
+
+    def add(self, arguments, *args, **kwargs):
+
+        password = Password()
+        password.create_pass(arguments)
+
+        if not password.password:
+            return 'Password is required'
+
+        params = self.params(password)
+
+        sql_add = self.add_query(params)
         cur = self.cursor
+
         try:
             cur.execute(sql_add, params)
             self.con.commit()
@@ -179,27 +200,32 @@ class PasswordManager():
             params[DESCRIPTION] = password.description
         return params
 
+    def delete_query(self, params, r):
+
+        if EMAIL in params:
+            i = [1, EMAIL]
+        elif LOGIN in params:
+            i = [3, LOGIN]
+        elif SITE in params:
+            i = [4, SITE]
+        elif DESCRIPTION in params:
+            i = [5, DESCRIPTION]
+        par = {i[1]: r[i[0]]}
+        sql = 'DELETE FROM {0} WHERE {1}=:{1}'.format(TABLE, i[1])
+        return sql, par
+
     def delete(self, arguments, *args, **kwargs):
         password = Password()
-        password.create_from_args(arguments)
+        password.create_pass(arguments)
         rows = self.search(arguments)
 
         if rows:
             params = self.params(password)
-
             if params:
                 cur = self.cursor
-                if EMAIL in params:
-                    i = [1, EMAIL]
-                elif LOGIN in params:
-                    i = [3, LOGIN]
-                elif SITE in params:
-                    i = [4, SITE]
-                elif DESCRIPTION in params:
-                    i = [5, DESCRIPTION]
+
                 for r in rows:
-                    par = {i[1]: r[i[0]]}
-                    sql = 'DELETE FROM {0} WHERE {1}=:{1}'.format(TABLE, i[1])
+                    sql, par = self.delete_query(params, r)
                     try:
                         cur.execute(sql, par)
                     except lite.Error as e:
@@ -214,7 +240,8 @@ class PasswordManager():
             params = self.params()
 
             if params:
-                cur = self.cursor
+                i = []
+                # cur = self.cursor
                 if EMAIL in params:
                     i = [1, EMAIL]
                 elif LOGIN in params:
@@ -223,6 +250,8 @@ class PasswordManager():
                     i = [4, SITE]
                 elif DESCRIPTION in params:
                     i = [5, DESCRIPTION]
+
+                print(i)
         print('edit pass')
 
 

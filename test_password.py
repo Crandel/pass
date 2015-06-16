@@ -8,20 +8,22 @@ query = [
     'test_password',
     'test_login',
     'test_site',
-    'test_description']
+    'test_description'
+]
 arguments = argparse.Namespace(
     e='arguments_email',
     p='arguments_password',
     l='arguments_login',
     s='arguments_site',
-    d='arguments_desc')
+    d='arguments_desc'
+)
 
 
 class TestCreateFromQuery(unittest.TestCase):
 
     def test_create_from_query(self):
         test_pass = password.Password()
-        test_pass.create_from_query(query)
+        test_pass.create_pass(query)
         # self.assertEqual(expected, create_from_query(self, list))
         assert test_pass.email == 'test_email'
         assert test_pass.password == 'test_password'
@@ -29,12 +31,9 @@ class TestCreateFromQuery(unittest.TestCase):
         assert test_pass.site == 'test_site'
         assert test_pass.description == 'test_description'
 
-
-class TestCreateFromArgs(unittest.TestCase):
-
     def test_create_from_args(self):
         test_pass = password.Password()
-        test_pass.create_from_args(arguments)
+        test_pass.create_pass(arguments)
         # self.assertEqual(expected, create_from_query(self, list))
         assert test_pass.email == 'arguments_email'
         assert test_pass.password == 'arguments_password'
