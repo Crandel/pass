@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import sqlite3 as lite
+import sqlite3
 import argparse
 from subprocess import Popen, PIPE, call
 
@@ -11,7 +11,7 @@ SITE = 'site'
 DESCRIPTION = 'description'
 
 
-class Password():
+class Password(object):
 
     email = None
     password = None
@@ -35,18 +35,22 @@ class Password():
             self.description = arguments.d
 
 
-class PasswordManager():
+class PasswordManager(object):
 
     def __init__(self, *args, **kwargs):
 
-        with lite.connect('pass.db') as con:
+        with sqlite3.connect('pass.db') as con:
 
             self.con = con
             cur = con.cursor()
-            query = 'CREATE TABLE IF NOT EXISTS {0} (id INTEGER PRIMARY KEY ASC, {1} text, {2} text, {3} text, {4} text, {5} text)'.format(
-                TABLE, EMAIL, PASSWORD, LOGIN, SITE, DESCRIPTION
-            )
-            cur.execute(query)
+            try:
+                cur.execute('SELECT * FROM {}'.format(TABLE))
+            except sqlite3.OperationalError as e:
+                print(e)
+                query = 'CREATE TABLE IF NOT EXISTS {0} (id INTEGER PRIMARY KEY ASC, {1} text, {2} text, {3} text, {4} text, {5} text)'.format(
+                    TABLE, EMAIL, PASSWORD, LOGIN, SITE, DESCRIPTION
+                )
+                cur.execute(query)
             con.commit()
             self.cursor = cur
 
@@ -275,26 +279,27 @@ def parse_args():
         '-d',
         help='use to add short description or search on it with regexp',
         default=None)
+    parser.set_defaults(func=password.search)
 
     subparsers = parser.add_subparsers()
 
     parser_add = subparsers.add_parser(
-        'a',
+        'add',
         help='Add new password to database')
     parser_add.set_defaults(func=password.add)
 
-    parser_add = subparsers.add_parser('e', help='Edit record from database')
-    parser_add.set_defaults(func=password.edit)
+    parser_edit = subparsers.add_parser('edit', help='Edit record from database')
+    parser_edit.set_defaults(func=password.edit)
 
     parser_delete = subparsers.add_parser(
-        'd',
+        'del',
         help='Delete password from database')
     parser_delete.set_defaults(func=password.delete)
 
     parser_search = subparsers.add_parser(
-        's',
+        'srch',
         help='Search password from database')
-    parser_search.set_defaults(func=password.search, input_type=True)
+    parser_search.set_defaults(func=password.search)
 
     return parser.parse_args()
 
