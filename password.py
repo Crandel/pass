@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import sqlite3
 import argparse
+import os
+
 from subprocess import Popen, PIPE, call
 
 TABLE = 'password'
@@ -9,19 +11,20 @@ PASSWORD = TABLE
 LOGIN = 'login'
 SITE = 'site'
 DESCRIPTION = 'description'
+DB = '{}/.pass.db'.format(os.environ['HOME'])
 
 
 class Db(object):
 
     def __init__(self, *args, **kwargs):
 
-        with sqlite3.connect('pass.db') as con:
+        with sqlite3.connect(DB) as con:
 
             self.con = con
             cur = con.cursor()
             try:
                 cur.execute('SELECT * FROM {}'.format(TABLE))
-            except sqlite3.OperationalError as e:
+            except sqlite3.OperationalError:
                 # CREATE TABLE IF NOT EXISTS password (id INTEGER PRIMARY KEY ASC, email text, password text, login text, site text, description text)
                 query = 'CREATE TABLE IF NOT EXISTS {0} (id INTEGER PRIMARY KEY ASC, {1} text, {2} text, {3} text, {4} text, {5} text)'.format(
                     TABLE, EMAIL, PASSWORD, LOGIN, SITE, DESCRIPTION
