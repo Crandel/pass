@@ -14,7 +14,58 @@ DESCRIPTION = 'description'
 DB = '{}/.pass.db'.format(os.environ['HOME'])
 
 
+
+class Password(object):
+
+    email = None
+    password = None
+    login = None
+    description = None
+    site = None
+
+    def __init__(self, arguments=None):
+
+        if isinstance(arguments, tuple):
+            self.email = arguments[1]
+            self.password = arguments[2]
+            self.login = arguments[3]
+            self.site = arguments[4]
+            self.description = arguments[5]
+        elif isinstance(arguments, argparse.Namespace):
+            self.email = arguments.e
+            self.password = arguments.p
+            self.login = arguments.l
+            self.site = arguments.s
+            self.description = arguments.d
+
+
 class Db(object):
+
+    default_params  = {i: '' for i in dir(Password()) if not i.startswith('_')}
+    sql_add         = '''INSERT INTO password(password, site, login, description)
+                         VALUES (:password, :site, :login, :description);'''
+    sql_select      = '''SELECT * FROM password WHERE
+                         password=:password OR
+                         site=:site OR
+                         login=:login OR
+                         description=:description;'''
+    sql_delete      = 'DELETE FROM password WHERE %(condition)s;'
+    sql_update      = '''UPDATE password
+                         SET %(values)s
+                         WHERE %(condition)s;'''
+    create_table    = '''CREATE TABLE IF NOT EXISTS %s
+                      (
+                       id INTEGER PRIMARY KEY ASC,
+                       %s text,
+                       %s text,
+                       %s text,
+                       %s text,
+                       %s text)''' % (TABLE,
+                                      EMAIL,
+                                      PASSWORD,
+                                      LOGIN,
+                                      SITE,
+                                      DESCRIPTION)
 
     def __init__(self, *args, **kwargs):
 
@@ -23,13 +74,9 @@ class Db(object):
             self.con = con
             cur = con.cursor()
             try:
-                cur.execute('SELECT * FROM {}'.format(TABLE))
+                cur.execute('SELECT * FROM %s' % TABLE)
             except sqlite3.OperationalError:
-                # CREATE TABLE IF NOT EXISTS password (id INTEGER PRIMARY KEY ASC, email text, password text, login text, site text, description text)
-                query = 'CREATE TABLE IF NOT EXISTS {0} (id INTEGER PRIMARY KEY ASC, {1} text, {2} text, {3} text, {4} text, {5} text)'.format(
-                    TABLE, EMAIL, PASSWORD, LOGIN, SITE, DESCRIPTION
-                )
-                cur.execute(query)
+                cur.execute(self.create_table)
             con.commit()
             self.cursor = cur
 
@@ -38,68 +85,34 @@ class Db(object):
         self.cursor.close()
         self.con.close()
 
+    def _get_params(params):
+        parameters = self.default_params
+        if params:
+            parameters.update(params)
+        return parameters
+
     def search(self, *args, **kwargs):
-        params = kwargs['params']
-        sql_get = self.search_query(params)
         cur = self.cursor
         results = False
-
+        params = self._get_params(kwargs['params'])
         try:
-            cur.execute(sql_get, params)
+            cur.execute(self.sql_select, params)
             results = cur.fetchall()
         except sqlite3.Error as e:
             print(e, 'err')
 
         return results
 
-    def search_query(self, params):
-
-        sql_get = 'SELECT * FROM {}'.format(TABLE)
-
-        if params:
-            params_sql = ' WHERE'
-            i = False
-            for p in params:
-                if i:
-                    params_sql += ' OR'
-                params_sql += ' {0}=:{1}'.format(p, p)
-                i = True
-            sql_get += params_sql
-        sql_get += ';'
-
-        return sql_get
-
     def add(self, *args, **kwargs):
-        params = kwargs['params']
-        sql_add = self.add_query(params)
+        params = self._get_params(kwargs['params'])
         cur = self.cursor
 
         try:
-            cur.execute(sql_add, params)
+            cur.execute(self.sql_add, params)
             self.con.commit()
         except sqlite3.Error as e:
             print(e, 'error')
         print('Record was added')
-
-    def add_query(self, params):
-
-        # INSERT INTO password(password, site, login, description) VALUES (:password, :site, :login, :description);
-        sql_add = 'INSERT INTO ' + TABLE
-        if params:
-            name = ''
-            values = ''
-            i = False
-            for p in params:
-                if i:
-                    name += ', '
-                    values += ', '
-                name += p
-                values += ':' + p
-                i = True
-            sql_add = sql_add + '(' + name + ') VALUES (' + values + ')'
-        sql_add += ';'
-
-        return sql_add
 
     def delete(self, *args, **kwargs):
         cur = self.cursor
@@ -131,31 +144,6 @@ class Db(object):
 
     def edit(self, *args, **kwargs):
         pass
-
-
-class Password(object):
-
-    email = None
-    password = None
-    login = None
-    description = None
-    site = None
-
-    def __call__(self, arguments):
-
-        if isinstance(arguments, tuple):
-            self.email = arguments[1]
-            self.password = arguments[2]
-            self.login = arguments[3]
-            self.site = arguments[4]
-            self.description = arguments[5]
-        else:
-            self.email = arguments.e
-            self.password = arguments.p
-            self.login = arguments.l
-            self.site = arguments.s
-            self.description = arguments.d
-        return self
 
 
 class PasswordManager(object):
