@@ -85,7 +85,7 @@ class Db(object):
         self.cursor.close()
         self.con.close()
 
-    def _get_params(params):
+    def _get_params(self, params):
         parameters = self.default_params
         if params:
             parameters.update(params)
@@ -171,15 +171,13 @@ class PasswordManager(object):
             raise Exception('Program requires the xclip or xsel application')
 
     def search(self, arguments, *args, **kwargs):
-        print(arguments)
         try:
             no_input = arguments.no_input
         except AttributeError:
             no_input = False
 
-        params = self.params(Password()(arguments))
+        params = self.params(Password(arguments))
         results = self.db.search(params=params)
-        print(results)
         if results and not no_input:
             res_list = self.parse_results(results)
             queny = input('Please enter a number of record ')
@@ -201,7 +199,7 @@ class PasswordManager(object):
 
     def add(self, arguments, *args, **kwargs):
 
-        params = self.params(Password()(arguments))
+        params = self.params(Password(arguments))
         if not params.get('password', False):
             print('Password is required')
             return
@@ -228,7 +226,7 @@ class PasswordManager(object):
         i = 1
         for res in results:
             res_list[i] = res
-            passw = Password()(res)
+            passw = Password(res)
             print(
                 '{0}. email:{1}, login:{2}, site:{3}, description:{4}'.format(
                     i, passw.email, passw.login, passw.site, passw.description
@@ -242,7 +240,7 @@ class PasswordManager(object):
         rows = self.search(arguments)
 
         if rows:
-            params = self.params(Password()(arguments))
+            params = self.params(Password(arguments))
             if params:
                 self.db.delete(params=params, rows=rows)
 
