@@ -42,7 +42,7 @@ class Password(object):
 class Db(object):
 
     default_params  = {i: '' for i in dir(Password()) if not i.startswith('_')}
-    sql_add         = '''INSERT INTO password(password, site, login, description)
+    sql_add         = '''INSERT INTO password (password, site, login, description)
                          VALUES (:password, :site, :login, :description);'''
     sql_select      = '''SELECT * FROM password WHERE
                          password=:password OR
@@ -93,7 +93,7 @@ class Db(object):
 
     def search(self, *args, **kwargs):
         cur = self.cursor
-        results = False
+        results = []
         params = self._get_params(kwargs['params'])
         try:
             cur.execute(self.sql_select, params)
@@ -114,36 +114,43 @@ class Db(object):
             print(e, 'error')
         print('Record was added')
 
-    def delete(self, *args, **kwargs):
+    def delete(self, id, **kwargs):
         cur = self.cursor
-        params = kwargs['params']
-        rows = kwargs['rows']
+        id = int(id)
+        condition = 'id=%d' % id
+        sql = self.sql_delete % {'condition': condition}
+        try:
+            cur.execute(sql)
+            print('Password №%d was deleted' % id)
+        except sqlite3.Error as e:
+            print(e)
+        self.con.commit()
 
-        for r in rows:
-            sql, par = self.delete_query(params, r)
-            try:
-                cur.execute(sql, par)
-            except sqlite3.Error as e:
-                print(e)
-            self.con.commit()
-        print('delete pass')
-
-    def delete_query(self, params, r):
-
-        if EMAIL in params:
-            i = [1, EMAIL]
-        elif LOGIN in params:
-            i = [3, LOGIN]
-        elif SITE in params:
-            i = [4, SITE]
-        elif DESCRIPTION in params:
-            i = [5, DESCRIPTION]
-        par = {i[1]: r[i[0]]}
-        sql = 'DELETE FROM {0} WHERE {1}=:{1}'.format(TABLE, i[1])
-        return sql, par
-
-    def edit(self, *args, **kwargs):
-        pass
+    def edit(self, id, **kwargs):
+        cur = self.cursor
+        id = int(id)
+        condition = 'id=%d' % id
+        values_dict = {}
+        values_dict['password'] = input('Please enter a new password\n')
+        values_dict['email'] = input('Please enter a new email\n')
+        values_dict['login'] = input('Please enter a new login\n')
+        values_dict['site'] = input('Please enter a new site\n')
+        values_dict['description'] = input('Please enter a new description\n')
+        values = ''
+        m = False
+        for key, value in values_dict.items():
+            if value:
+                if m:
+                    values += ', '
+                values += "%(key)s = '%(value)s'" % {'key': key, 'value': value}
+                m =True
+        sql = self.sql_update % {'condition': condition, 'values': values}
+        try:
+            cur.execute(sql)
+            print('Password №%d was updated' % id)
+        except sqlite3.Error as e:
+            print(e)
+        self.con.commit()
 
 
 class PasswordManager(object):
@@ -170,6 +177,24 @@ class PasswordManager(object):
         else:
             raise Exception('Program requires the xclip or xsel application')
 
+    def user_input(self, results, **kwargs):
+        res_list = self.parse_results(results)
+        queny = input('Please enter a number of record ')
+        try:
+            queny = int(queny)
+        except ValueError:
+            queny = input('Please enter the number of record ')
+            queny = int(queny)
+        if queny in res_list.keys():
+            if kwargs.get('copy'):
+                # password to clipboard
+                self.clipboard(res_list[queny][2])
+                print('Password was copied to clipboard')
+            if kwargs.get('edit'):
+                return queny
+        else:
+            print('Sorry, this record does not exist')
+
     def search(self, arguments, *args, **kwargs):
         try:
             no_input = arguments.no_input
@@ -179,22 +204,10 @@ class PasswordManager(object):
         params = self.params(Password(arguments))
         results = self.db.search(params=params)
         if results and not no_input:
-            res_list = self.parse_results(results)
-            queny = input('Please enter a number of record ')
-            try:
-                queny = int(queny)
-            except ValueError:
-                queny = input('Please enter the number of record ')
-                queny = int(queny)
-            if queny in res_list.keys():
-                # password to clipboard
-                self.clipboard(res_list[queny][2])
-            else:
-                print('Sorry, this record does not exist')
+            self.user_input(results=results, copy=True)
         elif not results:
             print('Sorry, this record does not exist')
 
-        print('search results')
         return results
 
     def add(self, arguments, *args, **kwargs):
@@ -207,24 +220,16 @@ class PasswordManager(object):
 
     def params(self, password):
         params = {}
-
-        if password.email:
-            params[EMAIL] = password.email
-        if password.password:
-            params[PASSWORD] = password.password
-        if password.login:
-            params[LOGIN] = password.login
-        if password.site:
-            params[SITE] = password.site
-        if password.description:
-            params[DESCRIPTION] = password.description
-        return params
+        ret = {
+            key: password.__dict__[key] for key in password.__dict__
+            if not key.startswith('_') and password.__dict__[key]}
+        return ret
 
     def parse_results(self, results):
 
         res_list = {}
-        i = 1
         for res in results:
+            i = res[0]
             res_list[i] = res
             passw = Password(res)
             print(
@@ -232,38 +237,21 @@ class PasswordManager(object):
                     i, passw.email, passw.login, passw.site, passw.description
                 )
             )
-            i += 1
         return res_list
 
     def delete(self, arguments, *args, **kwargs):
 
         rows = self.search(arguments)
-
         if rows:
-            params = self.params(Password(arguments))
-            if params:
-                self.db.delete(params=params, rows=rows)
+            id = self.user_input(results=rows, edit=True)
+            self.db.delete(id)
 
     def edit(self, arguments, *args, **kwargs):
         rows = self.search(arguments)
 
         if rows:
-            params = self.params()
-
-            if params:
-                i = []
-                # cur = self.cursor
-                if EMAIL in params:
-                    i = [1, EMAIL]
-                elif LOGIN in params:
-                    i = [3, LOGIN]
-                elif SITE in params:
-                    i = [4, SITE]
-                elif DESCRIPTION in params:
-                    i = [5, DESCRIPTION]
-
-                print(i)
-        print('edit pass')
+            id = self.user_input(results=rows, edit=True)
+            self.db.edit(id)
 
 
 def parse_args():
@@ -295,8 +283,10 @@ def parse_args():
         help='Add new password to database')
     parser_add.set_defaults(func=password.add)
 
-    parser_edit = subparsers.add_parser('edit', help='Edit record from database')
-    parser_edit.set_defaults(func=password.edit)
+    parser_edit = subparsers.add_parser(
+        'edit',
+        help='Edit record from database')
+    parser_edit.set_defaults(func=password.edit, no_input=True)
 
     parser_delete = subparsers.add_parser(
         'del',
