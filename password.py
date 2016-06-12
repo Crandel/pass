@@ -88,7 +88,7 @@ class Db(object):
         parameters = self.default_params
         if params:
             parameters.update(params)
-            if params['password']:
+            if params.get('password'):
                 params['password'] = self.get_hash(params['password'])
         return parameters
 
@@ -267,20 +267,22 @@ def parse_args():
     password = PasswordManager()
     parser = argparse.ArgumentParser(description='Password database utility')
     parser.add_argument(
-        '-e',
+        '-e', metavar='email',
         help='use to add email or search on it',
         default=None)
     parser.add_argument(
-        '-l',
+        '-l', metavar='login',
         help='use to add login or search on it',
         default=None)
     parser.add_argument(
-        '-s',
+        '-s', metavar='site',
         help='use to add site or search on it',
         default=None)
-    parser.add_argument('-p', help='use to add password', default=None)
     parser.add_argument(
-        '-d',
+        '-p', metavar='password',
+        help='use to add password', default=None)
+    parser.add_argument(
+        '-d', metavar='description',
         help='use to add short description or search on it with regexp',
         default=None)
     parser.set_defaults(func=password.search)
