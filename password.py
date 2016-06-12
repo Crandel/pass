@@ -14,7 +14,6 @@ DESCRIPTION = 'description'
 DB = '{}/.pass.db'.format(os.environ['HOME'])
 
 
-
 class Password(object):
 
     email = None
@@ -89,7 +88,16 @@ class Db(object):
         parameters = self.default_params
         if params:
             parameters.update(params)
+            if params['password']:
+                params['password'] = self.get_hash(params['password'])
         return parameters
+
+    def get_hash(self, password):
+        try:
+            hash = __import__('hash_func')
+            return hash.hash_password(password)
+        except ImportError:
+            return password
 
     def search(self, *args, **kwargs):
         cur = self.cursor
@@ -110,9 +118,9 @@ class Db(object):
         try:
             cur.execute(self.sql_add, params)
             self.con.commit()
+            print('Record was added')
         except sqlite3.Error as e:
             print(e, 'error')
-        print('Record was added')
 
     def delete(self, id, **kwargs):
         cur = self.cursor
@@ -121,10 +129,10 @@ class Db(object):
         sql = self.sql_delete % {'condition': condition}
         try:
             cur.execute(sql)
-            print('Password №%d was deleted' % id)
+            self.con.commit()
+            print('Record №%d was deleted' % id)
         except sqlite3.Error as e:
             print(e)
-        self.con.commit()
 
     def edit(self, id, **kwargs):
         cur = self.cursor
@@ -140,17 +148,19 @@ class Db(object):
         m = False
         for key, value in values_dict.items():
             if value:
+                if key == 'password':
+                    value = self.get_hash(value)
                 if m:
                     values += ', '
                 values += "%(key)s = '%(value)s'" % {'key': key, 'value': value}
-                m =True
+                m = True
         sql = self.sql_update % {'condition': condition, 'values': values}
         try:
             cur.execute(sql)
-            print('Password №%d was updated' % id)
+            self.con.commit()
+            print('Record №%d was updated' % id)
         except sqlite3.Error as e:
             print(e)
-        self.con.commit()
 
 
 class PasswordManager(object):
@@ -160,10 +170,10 @@ class PasswordManager(object):
 
     def clipboard(self, text):
 
-        xclipExists = call(['which', 'xclip'], stdout=PIPE, stderr=PIPE) == 0
+        xclip_exists = call(['which', 'xclip'], stdout=PIPE, stderr=PIPE) == 0
 
-        xselExists = call(['which', 'xsel'], stdout=PIPE, stderr=PIPE) == 0
-        if xclipExists:
+        xsel_exists = call(['which', 'xsel'], stdout=PIPE, stderr=PIPE) == 0
+        if xclip_exists:
             p = Popen(['xclip',
                        '-selection',
                        'c',
@@ -171,7 +181,7 @@ class PasswordManager(object):
                       stdin=PIPE,
                       close_fds=True)
             p.communicate(input=text.encode('utf-8'))
-        elif xselExists:
+        elif xsel_exists:
             p = Popen(['xsel', '-b', '-i'], stdin=PIPE, close_fds=True)
             p.communicate(input=text.encode('utf-8'))
         else:
@@ -219,7 +229,6 @@ class PasswordManager(object):
         self.db.add(params=params)
 
     def params(self, password):
-        params = {}
         ret = {
             key: password.__dict__[key] for key in password.__dict__
             if not key.startswith('_') and password.__dict__[key]}
