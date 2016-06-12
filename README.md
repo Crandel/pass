@@ -19,9 +19,11 @@ optional arguments:
   -e email             use to add email or search on it
   -l login             use to add login or search on it
   -s site              use to add site or search on it
-  -p password                 use to add password
+  -p password          use to add password
   -d description       use to add short description or search on it with
                        regexp
 ```
+
+Database file ```.pass.bd``` placed in $HOME directory
 
 Also If you want to hash your passwords you can write hash function in file hash_func.py
